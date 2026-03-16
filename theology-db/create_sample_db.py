@@ -7,8 +7,6 @@ Users can run full extraction later for complete library
 
 import sqlite3
 import os
-import base85
-import zstandard as zstd
 
 # Sample Bible verses (LSV) - representative selection
 SAMPLE_BIBLE = [
