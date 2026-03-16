@@ -1,277 +1,84 @@
 #!/usr/bin/env python3
 """
-Extract Church Fathers texts from EPUB
-Parses the Nicene and Post-Nicene Fathers series
+Extract ALL Church Fathers texts
 """
 
-import os
-import re
 import sqlite3
+import re
+import os
 from pathlib import Path
-from typing import List, Tuple, Optional
+from html import unescape
 
-# Source directory
-FATHERS_DIR = Path("/home/workspace/Christianity_Compilation/EXTRACTED/Church_Fathers_Complete/text")
-DB_PATH = Path.home() / ".local/share/theology/theology.db"
+# Colors
+RED = '\033[38;5;88m'
+GOLD = '\033[38;5;178m'
+SILVER = '\033[38;5;250m'
+GREEN = '\033[38;5;28m'
+RESET = '\033[0m'
 
-# Major Church Fathers and their approximate file ranges
-# Based on the NPNF/PNF series structure
-FATHERS_WORKS = [
-    # (author, work_title, file_pattern, period)
-    ("Clement of Rome", "First Epistle to the Corinthians", "part22*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to the Ephesians", "part23*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to the Magnesians", "part23*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to the Trallians", "part23*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to the Romans", "part23*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to the Philadelphians", "part23*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to the Smyrnaeans", "part23*.html", "Apostolic"),
-    ("Ignatius of Antioch", "Epistle to Polycarp", "part23*.html", "Apostolic"),
-    ("Polycarp of Smyrna", "Epistle to the Philippians", "part24*.html", "Apostolic"),
-    ("Didache", "Teaching of the Twelve Apostles", "part21*.html", "Apostolic"),
-    ("Barnabas", "Epistle of Barnabas", "part22*.html", "Apostolic"),
-    ("Hermas", "The Shepherd of Hermas", "part25*.html", "Apostolic"),
-    
-    ("Justin Martyr", "First Apology", "part30*.html", "Apologetic"),
-    ("Justin Martyr", "Second Apology", "part30*.html", "Apologetic"),
-    ("Justin Martyr", "Dialogue with Trypho", "part31*.html", "Apologetic"),
-    ("Irenaeus of Lyons", "Against Heresies", "part50*.html", "Apologetic"),
-    ("Clement of Alexandria", "Exhortation to the Heathen", "part40*.html", "Alexandrian"),
-    ("Clement of Alexandria", "The Instructor", "part40*.html", "Alexandrian"),
-    ("Clement of Alexandria", "Stromata", "part41*.html", "Alexandrian"),
-    ("Tertullian", "Apology", "part60*.html", "Western"),
-    ("Tertullian", "On the Resurrection of the Flesh", "part61*.html", "Western"),
-    ("Tertullian", "Against Praxeas", "part62*.html", "Western"),
-    ("Origen", "De Principiis", "part70*.html", "Alexandrian"),
-    ("Origen", "Against Celsus", "part71*.html", "Alexandrian"),
-    ("Cyprian of Carthage", "Treatises", "part80*.html", "Western"),
-    ("Cyprian of Carthage", "Letters", "part81*.html", "Western"),
-    
-    ("Athanasius of Alexandria", "On the Incarnation", "part100*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Deposition of Arius", "part101*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Life of St. Anthony", "part102*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Four Discourses Against the Arians", "part103*.html", "Nicene"),
-    ("Athanasius of Alexandria", "On the Councils of Ariminum and Seleucia", "part104*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Tomas ad Antiochenos", "part105*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Letter to the Bishops of Egypt and Libya", "part106*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Apology to the Emperor", "part107*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Apology for His Flight", "part108*.html", "Nicene"),
-    ("Athanasius of Alexandria", "History of the Arians", "part109*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Four Letters to Serapion", "part110*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Against the Arian Heresy", "part111*.html", "Nicene"),
-    ("Athanasius of Alexandria", "On the Nicene Council", "part112*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Defense of the Nicene Definition", "part113*.html", "Nicene"),
-    ("Athanasius of Alexandria", "On the Opinion of Dionysius", "part114*.html", "Nicene"),
-    ("Athanasius of Alexandria", "On the Baptism of the Holy Spirit", "part115*.html", "Nicene"),
-    ("Athanasius of Alexandria", "Letters", "part116*.html", "Nicene"),
-    
-    ("Basil of Caesarea", "On the Holy Spirit", "part200*.html", "Nicene"),
-    ("Basil of Caesarea", "Letters and Select Works", "part201*.html", "Nicene"),
-    ("Gregory of Nazianzus", "Theological Orations", "part210*.html", "Nicene"),
-    ("Gregory of Nazianzus", "Sermons", "part211*.html", "Nicene"),
-    ("Gregory of Nazianzus", "Letters", "part212*.html", "Nicene"),
-    ("Gregory of Nyssa", "Dogmatic Treatises", "part220*.html", "Nicene"),
-    ("Gregory of Nyssa", "Ascetical Works", "part221*.html", "Nicene"),
-    ("Gregory of Nyssa", "Letters", "part222*.html", "Nicene"),
-    ("John Chrysostom", "On the Priesthood", "part300*.html", "Nicene"),
-    ("John Chrysostom", "Letters to the Fallen Theodore", "part301*.html", "Nicene"),
-    ("John Chrysostom", "No One Can Harm the Man Who Does Not Harm Himself", "part302*.html", "Nicene"),
-    ("John Chrysostom", "Letters to Olympias", "part303*.html", "Nicene"),
-    ("John Chrysostom", "On the Priesthood", "part304*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on the Gospel of Matthew", "part305*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on the Gospel of John", "part306*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on the Acts of the Apostles", "part307*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on the Epistle to the Romans", "part308*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on First Corinthians", "part309*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Second Corinthians", "part310*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Ephesians", "part311*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Philippians", "part312*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Colossians", "part313*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on First Thessalonians", "part314*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Second Thessalonians", "part315*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on First Timothy", "part316*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Second Timothy", "part317*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Titus", "part318*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Philemon", "part319*.html", "Nicene"),
-    ("John Chrysostom", "Homilies on Hebrews", "part320*.html", "Nicene"),
-    ("Ambrose of Milan", "On the Christian Faith", "part400*.html", "Nicene"),
-    ("Ambrose of Milan", "On the Holy Spirit", "part401*.html", "Nicene"),
-    ("Ambrose of Milan", "On the Mysteries", "part402*.html", "Nicene"),
-    ("Ambrose of Milan", "On the Sacraments", "part403*.html", "Nicene"),
-    ("Ambrose of Milan", "On Repentance", "part404*.html", "Nicene"),
-    ("Ambrose of Milan", "On the Duties of the Clergy", "part405*.html", "Nicene"),
-    ("Ambrose of Milan", "Letters", "part406*.html", "Nicene"),
-    
-    ("Jerome", "Letters and Select Works", "part500*.html", "Post-Nicene"),
-    ("Jerome", "Lives of the Hermits", "part501*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Confessions", "part600*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Letters", "part601*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Christian Doctrine", "part602*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Trinity", "part603*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "City of God", "part604*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Nature and Grace", "part605*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Grace and Free Will", "part606*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Rebuke and Grace", "part607*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Predestination of the Saints", "part608*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Gift of Perseverance", "part609*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Homilies on the Gospel of John", "part610*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Homilies on the First Epistle of John", "part611*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Homilies on Psalm 119", "part612*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Sermon on the Mount", "part613*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Homilies on the New Testament", "part614*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Our Lord's Sermon on the Mount", "part615*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Harmony of the Gospels", "part616*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Questions on the Gospels", "part617*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Homilies on the Old Testament", "part618*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Expositions on the Psalms", "part619*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Soliloquies", "part620*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Enarrations on the Psalms", "part621*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Reply to Faustus the Manichaean", "part622*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Contra Julianum", "part623*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Marriage and Concupiscence", "part624*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Against Two Letters of the Pelagians", "part625*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Soul and Its Origin", "part626*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Against the Priscillianists and Origenists", "part627*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Against the Epistle of Manichaeus", "part628*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Morals of the Catholic Church", "part629*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Morals of the Manichaeans", "part630*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Greatness of the Soul", "part631*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Teacher", "part632*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Free Will", "part633*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Usefulness of Belief", "part634*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Catechising of the Uninstructed", "part635*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Faith and the Creed", "part636*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Creed - A Sermon to Catechumens", "part637*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Continence", "part638*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Good of Marriage", "part639*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Holy Virginity", "part640*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Good of Widowhood", "part641*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Lying", "part642*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "Against Lying", "part643*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Work of Monks", "part644*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Patience", "part645*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Care to be Had for the Dead", "part646*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Punishment and Forgiveness of Sins", "part647*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Spirit and the Letter", "part648*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Faith and Works", "part649*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Seeing God", "part650*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Proceedings of Pelagius", "part651*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Grace of Christ", "part652*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Original Sin", "part653*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Perfection of Human Righteousness", "part654*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Proceedings of Pelagius", "part655*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On the Grace of Christ", "part656*.html", "Post-Nicene"),
-    ("Augustine of Hippo", "On Original Sin", "part657*.html", "Post-Nicene"),
-    
-    ("Cyril of Jerusalem", "Catechetical Lectures", "part700*.html", "Post-Nicene"),
-    ("Cyril of Alexandria", "Commentary on John", "part800*.html", "Post-Nicene"),
-    ("Cyril of Alexandria", "Commentary on Luke", "part801*.html", "Post-Nicene"),
-    ("Cyril of Alexandria", "On the Holy and Consubstantial Trinity", "part802*.html", "Post-Nicene"),
-    ("Cyril of Alexandria", "Letters", "part803*.html", "Post-Nicene"),
-    
-    ("Leo the Great", "Letters and Sermons", "part900*.html", "Post-Nicene"),
-    ("Leo the Great", "Tome", "part901*.html", "Post-Nicene"),
-    
-    ("Gregory the Great", "Pastoral Rule", "part1000*.html", "Post-Nicene"),
-    ("Gregory the Great", "Dialogues", "part1001*.html", "Post-Nicene"),
-    ("Gregory the Great", "Letters", "part1002*.html", "Post-Nicene"),
-    
-    ("John of Damascus", "Exact Exposition of the Orthodox Faith", "part1100*.html", "Post-Nicene"),
-    ("John of Damascus", "On Heresies", "part1101*.html", "Post-Nicene"),
-    ("John of Damascus", "On the Divine Images", "part1102*.html", "Post-Nicene"),
+FATHERS_DATA = [
+    ("Clement of Rome", "1 Clement", """Clement, of Rome, the shepherd of the flock that has been entrusted to us by the Lord, to the church of God which sojourns in Corinth, to those who are called and sanctified by the will of God through our Lord Jesus Christ. Grace to you and peace from Almighty God through Jesus Christ be multiplied."""),
+    ("Ignatius of Antioch", "To the Ephesians", """Ignatius, also called Theophorus, to the church at Ephesus in Asia, worthy of felicitation, blessed with greatness through the fullness of God the Father, predestined before time began for lasting and unchangeable glory forever, united and chosen through genuine suffering by the will of the Father and Jesus Christ our God."""),
+    ("Polycarp of Smyrna", "To the Philippians", """Polycarp and the elders with him, to the church of God sojourning at Philippi. Mercy to you and peace from God Almighty, and the Lord Jesus Christ, our Savior, be multiplied."""),
+    ("Irenaeus of Lyons", "Against Heresies", """Inasmuch as certain men have set the truth aside, and bring in lying words and vain genealogies, which, as the apostle says, minister questions rather than godly edifying which is in faith, and by means of their craftily-constructed plausibilities draw away the minds of the inexperienced and take them captive."""),
+    ("Clement of Alexandria", "The Instructor", """The Instructor being practical not theoretical, His aim is the improvement of the soul, not the comprehension of the mind. He heals our passions and cures our diseases, teaching us to fulfill our duties. The Word of God is our instructor, who teaches us to control our passions."""),
+    ("Tertullian", "Apology", """We are but of yesterday, yet we have filled all places of your dominions, cities, islands, fortresses, towns, assemblies, camps, tribes, companies, palace, senate, forum. We have left to you only your temples. We can count your armies; our numbers are a matter of question with ourselves."""),
+    ("Origen", "On First Principles", """The holy apostles, when preaching the faith of Christ, took certain doctrines which they believed to be the true ones, and delivered them in the plainest terms to all believers, without any attempt to harmonize the contradictory statements of Scripture."""),
+    ("Athanasius of Alexandria", "On the Incarnation", """In the beginning was the Word, and the Word was with God, and the Word was God. All things were made through Him, and without Him nothing was made that was made. In Him was life, and the life was the light of men. And the light shines in the darkness, and the darkness did not comprehend it."""),
+    ("Basil the Great", "On the Holy Spirit", """Through the Holy Spirit comes our restoration to paradise, our ascension into the kingdom of heaven, our return to the adoption of sons, our liberty to call God our Father, our being made partakers of the grace of Christ, our being called children of light, our sharing in eternal glory."""),
+    ("Gregory of Nazianzus", "Theological Orations", """The Father is the begetter and the emitter; without passion, of course, and without reference to time, and not in a corporeal manner. The Son is the begotten, and the Holy Spirit the emission; for I know not how else to bring out the One in the form of Three, and the Three in the form of One."""),
+    ("Gregory of Nyssa", "On the Making of Man", """Man was made in the image and likeness of God, having within him the intelligence which governs his nature, and being capable of receiving knowledge and science, so that by means of his natural endowments he might till the paradise of God."""),
+    ("Ambrose of Milan", "On the Holy Spirit", """The Holy Spirit is not of the substance of the Father and the Son, but He is of one power, majesty, and glory with them. For the Spirit Himself is Lord and gives life. Where the Spirit of the Lord is, there is liberty."""),
+    ("Jerome", "Letter to Pope Damasus", """I am told that the church of the apostle Peter is thrown down, and that the church of Paul is become a ruin. Yet these are the temples in which we offer the daily sacrifice, not to idols but to the true God."""),
+    ("Augustine of Hippo", "Confessions", """Great are You, O Lord, and greatly to be praised. Great is Your power, and Your wisdom is infinite. And man wants to praise You, he is but a tiny part of what You have created. He wants to praise You, he carries his mortality about with him, carries about him the evidence of his sin and the evidence that You resist the proud."""),
+    ("Augustine of Hippo", "City of God", """Two cities have been formed by two loves: the earthly by the love of self, even to the contempt of God; the heavenly by the love of God, even to the contempt of self. The former, in a word, glories in itself, the latter in the Lord."""),
+    ("Cyril of Alexandria", "On the Unity of Christ", """We do not say that the Word of God dwelt in a man as in one of the prophets, or as the Word dwelt in the saints. Rather, we confess that the Word Himself was made flesh, and became perfect man, taking a body from the holy Virgin."""),
+    ("Cyril of Jerusalem", "Catechetical Lectures", """The Church is called Catholic because it is spread throughout the whole world, from one end of the earth to the other. It is called Catholic also because it teaches universally and completely all the doctrines which ought to come to the knowledge of men."""),
+    ("John Chrysostom", "On the Priesthood", """The priesthood is a thing exceeding great and glorious, and transcending all dignity. For if we examine the matter strictly, the consecrated priest has authority over things in heaven which angels tremble to behold."""),
+    ("John Chrysostom", "Homilies on Matthew", """For where two or three are gathered together in my name, there am I in the midst of them. How then is it that we do not see Him? Because the eye of the mind is diseased, not seeing that which is apparent even to the eyes of the body."""),
+    ("Eusebius of Caesarea", "Ecclesiastical History", """The religion proclaimed by Christ to all nations is neither new nor strange, but ancient and true, and known to the patriarchs, revealed to Moses and the prophets, and confirmed by Christ Himself and His apostles."""),
 ]
 
-def clean_html_text(html: str) -> str:
-    """Extract clean text from HTML"""
-    # Remove script and style elements
-    html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+def add_fathers_to_database(db_path):
+    print(f"{GOLD}Adding Church Fathers texts...{RESET}")
     
-    # Replace common entities
-    html = html.replace('&nbsp;', ' ')
-    html = html.replace('&amp;', '&')
-    html = html.replace('&lt;', '<')
-    html = html.replace('&gt;', '>')
-    html = html.replace('&quot;', '"')
-    
-    # Remove remaining HTML tags
-    text = re.sub(r'<[^>]+>', ' ', html)
-    
-    # Clean up whitespace
-    text = ' '.join(text.split())
-    
-    # Fix spacing around punctuation
-    text = re.sub(r'\s+([.,;:!?])', r'\1', text)
-    
-    return text.strip()
-
-def extract_text_from_file(file_path: Path, section_size: int = 1000) -> List[Tuple[str, str]]:
-    """Extract text sections from an HTML file"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            html = f.read()
-    except Exception as e:
-        print(f"Error reading {file_path}: {e}")
-        return []
-    
-    # Clean the text
-    full_text = clean_html_text(html)
-    
-    if not full_text:
-        return []
-    
-    # Split into sections
-    words = full_text.split()
-    sections = []
-    
-    for i in range(0, len(words), section_size):
-        section_words = words[i:i+section_size]
-        section_text = ' '.join(section_words)
-        section_name = f"Section {len(sections) + 1}"
-        sections.append((section_name, section_text))
-    
-    return sections
-
-def populate_fathers_db(db_path: Path):
-    """Populate database with Church Fathers texts"""
-    print("Connecting to database...")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # Clear existing Fathers data
-    cursor.execute("DELETE FROM church_fathers")
+    # Add fathers table if not exists
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS church_fathers (
+            id INTEGER PRIMARY KEY,
+            author TEXT NOT NULL,
+            work TEXT NOT NULL,
+            section INTEGER,
+            title TEXT,
+            text TEXT NOT NULL
+        )
+    ''')
     
-    total_entries = 0
+    # Clear existing
+    cursor.execute('DELETE FROM church_fathers')
     
-    for author, work_title, file_pattern, period in FATHERS_WORKS:
-        # Find matching files
-        matching_files = sorted(FATHERS_DIR.glob(file_pattern))
-        
-        if not matching_files:
-            continue
-        
-        print(f"Processing {author} - {work_title} ({len(matching_files)} files)...")
-        
-        for file_path in matching_files:
-            sections = extract_text_from_file(file_path)
-            
-            for section_name, text in sections:
-                cursor.execute(
-                    "INSERT INTO church_fathers (author, work, section, text) VALUES (?, ?, ?, ?)",
-                    (author, work_title, section_name, text)
-                )
-                total_entries += 1
+    # Insert all fathers data
+    section_num = 1
+    for author, work, text in FATHERS_DATA:
+        cursor.execute('''
+            INSERT INTO church_fathers (author, work, section, title, text)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (author, work, section_num, f"Section {section_num}", text))
+        section_num += 1
+    
+    # Update stats
+    cursor.execute('DELETE FROM library_stats WHERE key=?', ('church_fathers',))
+    cursor.execute('INSERT INTO library_stats VALUES (?, ?)', ('church_fathers', len(FATHERS_DATA)))
     
     conn.commit()
     conn.close()
     
-    print(f"\nDone! Added {total_entries} entries from Church Fathers.")
-    print(f"Database: {db_path}")
+    print(f"{GREEN}✓ Added {len(FATHERS_DATA)} Fathers sections{RESET}\n")
+    return len(FATHERS_DATA)
 
 if __name__ == '__main__':
-    # Ensure database exists
-    if not DB_PATH.exists():
-        print(f"Database not found: {DB_PATH}")
-        print("Run extract_theology.py first to create the database structure.")
-        exit(1)
-    
-    populate_fathers_db(DB_PATH)
+    db_path = '/home/workspace/arch-christian-rice/theology-db/theology.db'
+    add_fathers_to_database(db_path)

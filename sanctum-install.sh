@@ -180,20 +180,16 @@ mkdir -p ~/.local/{bin,share/theology,share/wallpapers/sanctum-os}
 mkdir -p ~/.local/share/applications
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# EXTRACT THEOLOGY DATABASE
+# THEOLOGY DATABASE
 # ═══════════════════════════════════════════════════════════════════════════════
-echo -e "${SILVER}[*] Extracting theological database...${RESET}"
+echo -e "${GOLD}[*] Installing theological library...${RESET}"
 
-if [ -f "theology-db/extract_theology.py" ]; then
-    cp theology-db/extract_theology.py ~/.local/share/theology/
-    cp theology-db/extract_lsv_bible.py ~/.local/share/theology/ 2>/dev/null || true
-    cp theology-db/extract_fathers.py ~/.local/share/theology/ 2>/dev/null || true
-    cd ~/.local/share/theology
-    python3 extract_theology.py 2>/dev/null || {
-        echo -e "${GOLD}    Note: Using sample database${RESET}"
-    }
-    cd "$SANCTUM_DIR"
-fi
+# Extract embedded database from theology_data_embedded.py
+python3 << 'PYTHON_EOF'
+import sys
+sys.path.insert(0, 
+[truncated]
+PYTHON_EOF
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INSTALL CLI SCRIPTS
