@@ -24,7 +24,7 @@ cat << 'EOF'
 ║    ███████╗ █████╗ ███╗   ██╗ ██████╗████████╗██╗   ██╗███╗   ███╗            ║
 ║    ██╔════╝██╔══██╗████╗  ██║██╔════╝╚══██╔══╝██║   ██║████╗ ████║            ║
 ║    ███████╗███████║██╔██╗ ██║██║        ██║   ██║   ██║██╔████╔██║            ║
-║    ╚════██║██╔══██║██║╚██╗██║██║        ██║   ██║   ██║██║╚██╔╝██║            ║
+║    ╚════██║██╔══██║██║╚██╗██║██║        ██║   ██║   ██║██�║╚██╔╝██║            ║
 ║    ███████║██║  ██║██║ ╚████║╚██████╗   ██║   ╚██████╔╝██║ ╚═╝ ██║            ║
 ║    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝            ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -286,6 +286,74 @@ if [ -f ~/.zshrc ] && ! grep -q "sanctum-quote" ~/.zshrc 2>/dev/null; then
     echo '' >> ~/.zshrc
     echo '# Sanctum OS greeting' >> ~/.zshrc
     echo 'sanctum-quote 2>/dev/null || true' >> ~/.zshrc
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TERMINAL CUSTOMIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+echo -e "${SILVER}[*] Installing terminal customizations...${RESET}"
+
+# Install starship prompt
+if ! command -v starship &> /dev/null; then
+    echo -e "${SILVER}    Installing starship prompt...${RESET}"
+    curl -fsSL https://starship.rs/install.sh | sh -s -- -y 2>/dev/null || {
+        echo -e "${GOLD}    Note: Starship install skipped${RESET}"
+    }
+fi
+
+# Deploy starship config
+if [ -f "config/starship.toml" ]; then
+    if [ -f ~/.config/starship.toml ] && [ ! -L ~/.config/starship.toml ]; then
+        mv ~/.config/starship.toml ~/.config/starship.toml.backup.$(date +%Y%m%d_%H%M%S)
+    fi
+    mkdir -p ~/.config
+    cp config/starship.toml ~/.config/
+fi
+
+# Deploy shell configs
+if [ -d "config/shell" ]; then
+    mkdir -p ~/.config/sanctum
+    cp config/shell/*.sh ~/.config/sanctum/
+    chmod +x ~/.config/sanctum/*.sh
+    
+    # Add to bashrc
+    if ! grep -q "sanctum-bash.sh" ~/.bashrc 2>/dev/null; then
+        echo '' >> ~/.bashrc
+        echo '# Sanctum OS shell configuration' >> ~/.bashrc
+        echo '[ -f ~/.config/sanctum/sanctum-bash.sh ] && source ~/.config/sanctum/sanctum-bash.sh' >> ~/.bashrc
+    fi
+    
+    # Add to zshrc
+    if [ -f ~/.zshrc ] && ! grep -q "sanctum-zsh.sh" ~/.zshrc 2>/dev/null; then
+        echo '' >> ~/.zshrc
+        echo '# Sanctum OS shell configuration' >> ~/.zshrc
+        echo '[ -f ~/.config/sanctum/sanctum-zsh.sh ] && source ~/.config/sanctum/sanctum-zsh.sh' >> ~/.zshrc
+    fi
+    
+    # Enable starship
+    if command -v starship &> /dev/null; then
+        if ! grep -q "starship init" ~/.bashrc 2>/dev/null; then
+            echo '' >> ~/.bashrc
+            echo '# Starship prompt' >> ~/.bashrc
+            echo 'eval "$(starship init bash)"' >> ~/.bashrc
+        fi
+        if [ -f ~/.zshrc ] && ! grep -q "starship init" ~/.zshrc 2>/dev/null; then
+            echo '' >> ~/.zshrc
+            echo '# Starship prompt' >> ~/.zshrc
+            echo 'eval "$(starship init zsh)"' >> ~/.zshrc
+        fi
+    fi
+fi
+
+# Install sanctum-term
+if [ -f "scripts/sanctum-term" ]; then
+    cp scripts/sanctum-term ~/.local/bin/
+    chmod +x ~/.local/bin/sanctum-term
+fi
+
+# Install kitty session config
+if [ -f "config/kitty/sanctum-session.conf" ]; then
+    cp config/kitty/sanctum-session.conf ~/.config/kitty/
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════

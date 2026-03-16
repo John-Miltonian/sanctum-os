@@ -1,0 +1,109 @@
+# Sanctum OS Starship Configuration
+# Theological shell prompt
+
+# ═══════════════════════════════════════════════════════════════════════════════
+[truncated]
+bol = "∙"
+success_symbol = "[──>](bold red)"
+success_symbol = "[──>](bold #8b0000)"
+
+[character]
+success_symbol = "[──>](bold #8b0000)"
+error_symbol = "[──>](bold #ff0000)"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DIRECTORY
+# ═══════════════════════════════════════════════════════════════════════════════
+[directory]
+format = "[$path]($style)[$read_only]($read_only_style) "
+truncation_length = 3
+truncation_symbol = "…/"
+style = "bold #b8860b"
+read_only = "  "
+read_only_style = "bold #8b0000"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GIT BRANCH
+# ═══════════════════════════════════════════════════════════════════════════════
+[git_branch]
+symbol = "  "
+format = "[$symbol$branch(:$remote_branch)]($style) "
+style = "bold #d4c4a8"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROGRAMMING LANGUAGES
+# ═══════════════════════════════════════════════════════════════════════════════
+[python]
+symbol = "  "
+format = "[$symbol$version]($style) "
+style = "bold #daa520"
+
+[nodejs]
+symbol = "  "
+format = "[$symbol$version]($style) "
+style = "bold #228b22"
+
+[rust]
+symbol = "  "
+format = "[$symbol$version]($style) "
+style = "bold #8b4513"
+
+[go]
+symbol = "  "
+format = "[$symbol$version]($style) "
+style = "bold #00add8"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTAINER & CLOUD
+# ═══════════════════════════════════════════════════════════════════════════════
+[docker_context]
+symbol = "  "
+format = "[$symbol$context]($style) "
+style = "bold #00bfff"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIME & DATE
+# ═══════════════════════════════════════════════════════════════════════════════
+[time]
+disabled = false
+format = "[$time]($style) "
+time_format = "%H:%M"
+style = "dimmed #888888"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STATUS
+# ═══════════════════════════════════════════════════════════════════════════════
+[status]
+symbol = " ✗"
+success_symbol = ""
+format = "[$symbol$common_meaning$signal_name$maybe_int]($style) "
+map_symbol = true
+disabled = false
+style = "bold #ff0000"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CMD DURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+[cmd_duration]
+min_time = 2000
+format = "[took $duration]($style) "
+style = "dimmed #888888"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHELL
+# ═══════════════════════════════════════════════════════════════════════════════
+[shell]
+disabled = false
+bash_indicator = ""
+zsh_indicator = ""
+fish_indicator = ""
+powershell_indicator = ""
+ion_indicator = ""
+elvish_indicator = ""
+nu_indicator = ""
+tcsh_indicator = ""
+xonsh_indicator = ""
+cmd_indicator = ""
+unknown_indicator = "mystery"
+format = "[$indicator]($style) "
+style = "dimmed #444444"
