@@ -1,0 +1,24 @@
+# Sanctum OS Wofi Configuration
+# Theological application launcher
+
+show=drun
+prompt=Search...
+width=600
+height=400
+location=center
+no_actions=true
+allow_images=true
+allow_markup=true
+term=kitty
+
+# Styling
+style=~/.config/wofi/sanctum.css
+
+# Behavior
+insensitive=true
+matching=fuzzy
+sort_order=default
+
+# Layout
+columns=1
+lines=10

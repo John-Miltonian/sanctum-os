@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""
+biblia - Holy Bible CLI for Sanctum OS
+Search and read Scripture from the command line
+"""
+
+import os
+import sys
+import sqlite3
+import argparse
+import re
+from pathlib import Path
+from typing import Optional, List, Tuple
+
+DB_PATH = Path.home() / ".local/share/theology/theology.db"
+
+# Color scheme matching the persona
+COLORS = {
+    'red': '\033[38;5;88m',
+    'gold': '\033[38;5;178m',
+    'silver': '\033[38;5;250m',
+    'black': '\033[38;5;232m',
+    'reset': '\033[0m',
+    'bold': '\033[1m',
+}
+
+def color(name: str, text: str) -> str:
+    return f"{COLORS.get(name, '')}{text}{COLORS['reset']}"
+
+class BibleReader:
+    def __init__(self):
+        self.db_path = DB_PATH
+        self.conn = None
+        self.cursor = None
+        
+    def connect(self):
+        if not self.db_path.exists():
+            print(color('red', "Error: Theology database not found."))
+            print(f"Run: {color('gold', 'extract_theology.py')}")
+            sys.exit(1)
+        
+        self.conn = sqlite3.connect(self.db_path)
+        self.conn.row_factory = sqlite3.Row
+        self.cursor = self.conn.cursor()
+        
+    def close(self):
+        if self.conn:
+            self.conn.close()
+    
+    def list_books(self, testament: Optional[str] = None):
+        """List all Bible books"""
+        query = "SELECT name, testament, chapters FROM bible_books"
+        params = []
+        
+        if testament:
+            query += " WHERE testament = ?"
+            params.append(testament.upper())
+        
+        query += " ORDER BY id"
+        
+        self.cursor.execute(query, params)
+        books = self.cursor.fetchall()
+        
+        current_testament = None
+        for book in books:
+            if book['testament'] != current_testament:
+                current_testament = book['testament']
+                print(f"\n{color('gold', '═' * 60)}")
+                testament_name = "OLD TESTAMENT" if current_testament == "OT" else "NEW TESTAMENT"
+                print(color('gold', f"  {testament_name}"))
+                print(f"{color('gold', '═' * 60)}\n")
+            
+            print(f"  {color('red', '•')} {color('silver', book['name']):<30} ({book['chapters']} chapters)")
+    
+    def read_chapter(self, book_name: str, chapter: int):
+        """Read a full chapter"""
+        # Find book
+        self.cursor.execute("SELECT id, name, chapters FROM bible_books WHERE name LIKE ?", (f"%{book_name}%",))
+        book = self.cursor.fetchone()
+        
+        if not book:
+            print(color('red', f"Book '{book_name}' not found."))
+            return
+        
+        if chapter < 1 or chapter > book['chapters']:
+            print(color('red', f"Chapter {chapter} not found. {book['name']} has {book['chapters']} chapters."))
+            return
+        
+        # Get verses
+        self.cursor.execute(
+            """SELECT verse, text FROM bible_verses 
+               WHERE book_id = ? AND chapter = ? ORDER BY verse""",
+            (book['id'], chapter)
+        )
+        verses = self.cursor.fetchall()
+        
+        if not verses:
+            print(color('silver', "No verses found for this chapter."))
+            return
+        
+        # Print header
+        print(f"\n{color('gold', '╔' + '═' * 68 + '╗')}")
+        print(f"{color('gold', '║')}  {color('bold', book['name'] + ' ' + str(chapter)).center(66)}  {color('gold', '║')}")
+        print(f"{color('gold', '╚' + '═' * 68 + '╝')}\n")
+        
+        # Print verses
+        for verse in verses:
+            verse_num = color('red', f"{verse['verse']:>3}")
+            text = verse['text']
+            print(f" {verse_num}  {color('silver', text)}")
+        
+        print()
+    
+    def search(self, query: str, limit: int = 20):
+        """Search the Bible"""
+        self.cursor.execute(
+            """SELECT bb.name, bv.chapter, bv.verse, bv.text 
+               FROM bible_verses bv
+               JOIN bible_books bb ON bv.book_id = bb.id
+               WHERE bv.text LIKE ?
+               ORDER BY bv.book_id, bv.chapter, bv.verse
+               LIMIT ?""",
+            (f"%{query}%", limit)
+        )
+        
+        results = self.cursor.fetchall()
+        
+        if not results:
+            print(color('silver', f"No results found for '{query}'"))
+            return
+        
+        print(f"\n{color('gold', f'Found {len(results)} results for')} {color('red', query)}\n")
+        
+        for result in results:
+            reference = f"{result['name']} {result['chapter']}:{result['verse']}"
+            print(f"  {color('gold', reference):<25} {color('silver', result['text'][:80])}")
+    
+    def daily_verse(self):
+        """Display a daily verse"""
+        import hashlib
+        from datetime import datetime
+        
+        # Use day of year to select verse
+        day_of_year = datetime.now().timetuple().tm_yday
+        
+        self.cursor.execute("SELECT COUNT(*) FROM bible_verses")
+        total_verses = self.cursor.fetchone()[0]
+        
+        if total_verses == 0:
+            # Fallback verses if database is empty
+            verses = [
+                ("John", 3, 16, "For God so loved the world that he gave his only Son, that whoever believes in him should not perish but have eternal life."),
+                ("Psalm", 23, 1, "The Lord is my shepherd; I shall not want."),
+                ("Philippians", 4, 13, "I can do all things through Christ who strengthens me."),
+                ("Romans", 8, 28, "And we know that in all things God works for the good of those who love him, who have been called according to his purpose."),
+                ("Proverbs", 3, 5, "Trust in the Lord with all your heart and lean not on your own understanding."),
+            ]
+            verse = verses[day_of_year % len(verses)]
+            print(f"\n{color('gold', '╭' + '─' * 68 + '╮')}")
+            print(f"{color('gold', '│')}  {color('bold', 'Daily Scripture').center(66)}  {color('gold', '│')}")
+            print(f"{color('gold', '├' + '─' * 68 + '┤')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            text_lines = [verse[3][i:i+62] for i in range(0, len(verse[3]), 62)]
+            for line in text_lines:
+                print(f"{color('gold', '│')}   {color('silver', line):<63}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '│')}   {color('red', f'— {verse[0]} {verse[1]}:{verse[2]}').rjust(63)}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '╰' + '─' * 68 + '╯')}\n")
+            return
+        
+        verse_id = (day_of_year % total_verses) + 1
+        
+        self.cursor.execute(
+            """SELECT bb.name, bv.chapter, bv.verse, bv.text
+               FROM bible_verses bv
+               JOIN bible_books bb ON bv.book_id = bb.id
+               WHERE bv.id = ?""",
+            (verse_id,)
+        )
+        
+        result = self.cursor.fetchone()
+        if result:
+            print(f"\n{color('gold', '╭' + '─' * 68 + '╮')}")
+            print(f"{color('gold', '│')}  {color('bold', 'Daily Scripture').center(66)}  {color('gold', '│')}")
+            print(f"{color('gold', '├' + '─' * 68 + '┤')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            text_lines = [result['text'][i:i+62] for i in range(0, len(result['text']), 62)]
+            for line in text_lines:
+                print(f"{color('gold', '│')}   {color('silver', line):<63}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '│')}   {color('red', f'— {result['name']} {result['chapter']}:{result['verse']}').rjust(63)}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '╰' + '─' * 68 + '╯')}\n")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='biblia - Holy Bible CLI for Sanctum OS',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f'''
+Examples:
+  {color('red', 'biblia')} {color('silver', '--list')}           List all Bible books
+  {color('red', 'biblia')} {color('silver', 'John 3:16')}        Read John 3:16
+  {color('red', 'biblia')} {color('silver', 'Genesis 1')}       Read Genesis chapter 1
+  {color('red', 'biblia')} {color('silver', '--search love')}   Search for "love"
+  {color('red', 'biblia')} {color('silver', '--daily')}         Show daily verse
+        '''
+    )
+    
+    parser.add_argument('reference', nargs='?', help='Bible reference (e.g., "John 3:16", "Genesis 1")')
+    parser.add_argument('-l', '--list', action='store_true', help='List all books')
+    parser.add_argument('-t', '--testament', choices=['OT', 'NT'], help='Filter by testament')
+    parser.add_argument('-s', '--search', metavar='QUERY', help='Search for text')
+    parser.add_argument('-d', '--daily', action='store_true', help='Show daily verse')
+    parser.add_argument('--limit', type=int, default=20, help='Search result limit')
+    
+    args = parser.parse_args()
+    
+    reader = BibleReader()
+    reader.connect()
+    
+    try:
+        if args.list:
+            reader.list_books(args.testament)
+        elif args.search:
+            reader.search(args.search, args.limit)
+        elif args.daily:
+            reader.daily_verse()
+        elif args.reference:
+            # Parse reference like "John 3:16" or "Genesis 1"
+            parts = args.reference.split()
+            
+            # Handle multi-word book names
+            chapter_verse = parts[-1]
+            book_name = ' '.join(parts[:-1])
+            
+            if ':' in chapter_verse:
+                chapter, verse = chapter_verse.split(':')
+                reader.read_chapter(book_name, int(chapter))
+                # TODO: Highlight specific verse
+            else:
+                reader.read_chapter(book_name, int(chapter_verse))
+        else:
+            reader.daily_verse()
+    finally:
+        reader.close()
+
+if __name__ == '__main__':
+    main()

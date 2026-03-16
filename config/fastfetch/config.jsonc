@@ -1,0 +1,125 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    
+    // Sanctum OS Fastfetch Configuration
+    // Theological computing environment
+    
+    "logo": {
+        "source": "auto",
+        "type": "auto",
+        "padding": {
+            "top": 2,
+            "left": 3
+        }
+    },
+    
+    "display": {
+        "color": {
+            "keys": "red",
+            "title": "yellow"
+        },
+        "separator": "  ",
+        "brightColor": true
+    },
+    
+    "modules": [
+        "break",
+        {
+            "type": "title",
+            "keyWidth": 10,
+            "color": {
+                "user": "red",
+                "at": "white",
+                "host": "yellow"
+            }
+        },
+        "break",
+        {
+            "type": "os",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "kernel",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "uptime",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "packages",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "shell",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "de",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "wm",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "terminal",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        "break",
+        {
+            "type": "cpu",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "gpu",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "memory",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        {
+            "type": "disk",
+            "key": "  ",
+            "keyColor": "red",
+            "folders": "/"
+        },
+        {
+            "type": "battery",
+            "key": "  ",
+            "keyColor": "red"
+        },
+        "break",
+        {
+            "type": "custom",
+            "key": "  ",
+            "keyColor": "yellow",
+            "format": "Sanctum OS v1.0"
+        },
+        {
+            "type": "custom",
+            "key": "  ",
+            "keyColor": "yellow",
+            "format": "Theological Computing Environment"
+        },
+        {
+            "type": "custom",
+            "key": "  ",
+            "keyColor": "white",
+            "format": "Gloria Patri, et Filio, et Spiritui Sancto"
+        },
+        "break"
+    ]
+}

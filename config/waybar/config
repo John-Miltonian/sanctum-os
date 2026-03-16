@@ -1,0 +1,97 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 34,
+    "spacing": 4,
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["custom/theology"],
+    "modules-right": ["custom/biblia", "tray", "network", "pulseaudio", "backlight", "battery", "clock"],
+    
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "10": "10",
+            "active": "",
+            "default": ""
+        },
+        "tooltip": true,
+        "tooltip-format": "Genesis|Exodus|Leviticus|Numbers|Deuteronomy|Psalms|Proverbs|Gospels|Revelation"
+    },
+    
+    "hyprland/window": {
+        "format": "{}",
+        "max-length": 50,
+        "tooltip": false
+    },
+    
+    "custom/theology": {
+        "format": "  {}",
+        "exec": "sanctum-quote | head -n 5 | tail -n 1 | sed 's/^  │   //' | sed 's/  │$//'",
+        "interval": 300,
+        "tooltip": false
+    },
+    
+    "custom/biblia": {
+        "format": "  {}  ",
+        "exec": "biblia --daily | grep -A1 'Daily Scripture' | tail -1 | sed 's/^.*│   //' | cut -c1-30",
+        "interval": 60,
+        "on-click": "kitty biblia --daily",
+        "tooltip": true
+    },
+    
+    "tray": {
+        "icon-size": 16,
+        "spacing": 10
+    },
+    
+    "clock": {
+        "format": "{:%H:%M}",
+        "format-alt": "{:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>",
+        "interval": 1
+    },
+    
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{capacity}% {icon}",
+        "format-charging": "{capacity}% ",
+        "format-plugged": "{capacity}% ",
+        "format-alt": "{time} {icon}",
+        "format-icons": ["", "", "", "", ""]
+    },
+    
+    "network": {
+        "format-wifi": "{essid} ({signalStrength}%) ",
+        "format-ethernet": "{ipaddr}/{cidr} ",
+        "tooltip-format": "{ifname} via {gwaddr}",
+        "format-linked": "{ifname} (No IP) ",
+        "format-disconnected": "Disconnected ⚠",
+        "format-alt": "{ifname}: {ipaddr}/{cidr}"
+    },
+    
+    "pulseaudio": {
+        "format": "{volume}% {icon}",
+        "format-muted": "0% ",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "on-click": "pavucontrol"
+    },
+    
+    "backlight": {
+        "format": "{percent}% {icon}",
+        "format-icons": ["", ""]
+    }
+}

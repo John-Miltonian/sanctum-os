@@ -1,0 +1,94 @@
+#!/bin/bash
+# sanctum-help - Display Sanctum OS help
+
+RED="\033[38;5;88m"
+GOLD="\033[38;5;178m"
+SILVER="\033[38;5;250m"
+BLACK="\033[38;5;232m"
+RESET="\033[0m"
+
+cat << EOF
+${RED}
+    ╔═══════════════════════════════════════════════════════════════════╗
+    ║                                                                   ║
+    ║    ███████╗ █████╗ ███╗   ██╗ ██████╗████████╗██╗   ██╗███╗   ███╗ ║
+    ║    ██╔════╝██╔══██╗████╗  ██║██╔════╝╚══██╔══╝██║   ██║████╗ ████║ ║
+    ║    ███████╗███████║██╔██╗ ██║██║        ██║   ██║   ██║██╔████╔██║ ║
+    ║    ╚════██║██╔══██║██║╚██╗██║██║        ██║   ██║   ██║██║╚██╔╝██║ ║
+    ║    ███████║██║  ██║██║ ╚████║╚██████╗   ██║   ╚██████╔╝██║ ╚═╝ ██║ ║
+    ║    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝ ║
+    ║                                                                   ║
+    ║           Sanctum OS: The Theological Computing Environment       ║
+    ║                                                                   ║
+    ╚═══════════════════════════════════════════════════════════════════╝
+${RESET}
+${GOLD}A complete biblical and patristic library integrated into your system${RESET}
+${SILVER}No external downloads required. All texts embedded.${RESET}
+
+${GOLD}THEOLOGICAL COMMANDS:${RESET}
+
+  ${RED}biblia${RESET}              Search and read the Holy Bible
+  ${RED}patres${RESET}              Access the Church Fathers' writings
+  ${RED}sanctum-quote${RESET}       Display a daily theological quote
+  ${RED}sanctum-theme${RESET}       Apply the Sanctum color scheme
+  ${RED}sanctum-help${RESET}        Display this help message
+
+${GOLD}BIBLIA USAGE:${RESET}
+
+  ${SILVER}biblia --list${RESET}                List all Bible books
+  ${SILVER}biblia --list -t OT${RESET}          List Old Testament books
+  ${SILVER}biblia --list -t NT${RESET}          List New Testament books
+  ${SILVER}biblia John 3:16${RESET}             Read John 3:16
+  ${SILVER}biblia Genesis 1${RESET}             Read Genesis chapter 1
+  ${SILVER}biblia --search love${RESET}       Search for "love" in the Bible
+  ${SILVER}biblia --daily${RESET}              Show daily verse
+
+${GOLD}PATRES USAGE:${RESET}
+
+  ${SILVER}patres --list${RESET}                List all Church Fathers
+  ${SILVER}patres --works Augustine${RESET}   List works by Augustine
+  ${SILVER}patres --read Augustine${RESET}    Read Augustine's writings
+  ${SILVER}patres --search grace${RESET}      Search for "grace" in the Fathers
+  ${SILVER}patres --random${RESET}            Show random quote from the Fathers
+
+${GOLD}KEYBINDINGS:${RESET}
+
+  ${SILVER}Mod+Enter${RESET}              Open terminal
+  ${SILVER}Mod+Shift+Enter${RESET}        Open floating terminal
+  ${SILVER}Mod+D${RESET}                  Open application menu (rofi/wofi)
+  ${SILVER}Mod+Shift+D${RESET}            Open theological menu
+  ${SILVER}Mod+B${RESET}                  Open browser
+  ${SILVER}Mod+F${RESET}                  Toggle fullscreen
+  ${SILVER}Mod+Shift+Q${RESET}            Close window
+  ${SILVER}Mod+Shift+E${RESET}            Exit session
+  ${SILVER}Mod+H/J/K/L${RESET}            Focus left/down/up/right
+  ${SILVER}Mod+Shift+H/J/K/L${RESET}      Move window left/down/up/right
+  ${SILVER}Mod+1-9${RESET}                Switch to workspace
+  ${SILVER}Mod+Shift+1-9${RESET}          Move window to workspace
+
+${GOLD}WORKSPACES:${RESET}
+
+  ${RED}1${RESET} Genesis        - Terminal, shell, CLI tools
+  ${RED}2${RESET} Exodus         - Browser, web applications
+  ${RED}3${RESET} Leviticus      - Code editor, development
+  ${RED}4${RESET} Numbers        - File manager, system tools
+  ${RED}5${RESET} Deuteronomy    - Documents, reading
+  ${RED}6${RESET} Psalms         - Media, music
+  ${RED}7${RESET} Proverbs       - Communication, chat
+  ${RED}8${RESET} Gospels        - Study, research, notes
+  ${RED}9${RESET} Revelation     - System monitoring, logs
+
+${GOLD}LITURGICAL THEMES:${RESET}
+
+  ${SILVER}sancuum-theme sanctum${RESET}   Default (cassock black, cardinal red, gold)
+  ${SILVER}sancuum-theme liturgy${RESET}   Liturgical seasons colors
+
+${GOLD}SUPPORT:${RESET}
+
+  ${SILVER}Database:${RESET} ~/.local/share/theology/theology.db
+  ${SILVER}Configs:${RESET}  ~/.config/
+  ${SILVER}Scripts:${RESET}  ~/.local/bin/
+
+${GOLD}Gloria Patri, et Filio, et Spiritui Sancto.${RESET}
+
+EOF

@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+"""
+patres - Church Fathers CLI for Sanctum OS
+Access the writings of the Church Fathers from the command line
+"""
+
+import os
+import sys
+import sqlite3
+import argparse
+from pathlib import Path
+from typing import Optional, List
+
+DB_PATH = Path.home() / ".local/share/theology/theology.db"
+
+# Color scheme matching the persona
+COLORS = {
+    'red': '\033[38;5;88m',
+    'gold': '\033[38;5;178m',
+    'silver': '\033[38;5;250m',
+    'black': '\033[38;5;232m',
+    'reset': '\033[0m',
+    'bold': '\033[1m',
+}
+
+def color(name: str, text: str) -> str:
+    return f"{COLORS.get(name, '')}{text}{COLORS['reset']}"
+
+class FathersReader:
+    def __init__(self):
+        self.db_path = DB_PATH
+        self.conn = None
+        self.cursor = None
+        
+    def connect(self):
+        if not self.db_path.exists():
+            print(color('red', "Error: Theology database not found."))
+            print(f"Run: {color('gold', 'extract_theology.py')}")
+            sys.exit(1)
+        
+        self.conn = sqlite3.connect(self.db_path)
+        self.conn.row_factory = sqlite3.Row
+        self.cursor = self.conn.cursor()
+        
+    def close(self):
+        if self.conn:
+            self.conn.close()
+    
+    def list_fathers(self):
+        """List all Church Fathers"""
+        self.cursor.execute(
+            """SELECT DISTINCT author, COUNT(work) as work_count 
+               FROM church_fathers 
+               GROUP BY author 
+               ORDER BY author"""
+        )
+        fathers = self.cursor.fetchall()
+        
+        print(f"\n{color('gold', '╔' + '═' * 68 + '╗')}")
+        print(f"{color('gold', '║')}  {color('bold', 'THE CHURCH FATHERS').center(66)}  {color('gold', '║')}")
+        print(f"{color('gold', '╚' + '═' * 68 + '╝')}\n")
+        
+        periods = {
+            'Apostolic': ['Clement of Rome', 'Ignatius of Antioch', 'Polycarp of Smyrna'],
+            'Apologetic': ['Justin Martyr', 'Athenagoras', 'Theophilus', 'Tatian'],
+            'Alexandrian': ['Clement of Alexandria', 'Origen'],
+            'Western': ['Tertullian', 'Cyprian of Carthage'],
+            'Nicene': ['Athanasius of Alexandria', 'Basil of Caesarea', 
+                      'Gregory of Nazianzus', 'Gregory of Nyssa', 
+                      'John Chrysostom', 'Ambrose of Milan', 'Jerome'],
+            'Post-Nicene': ['Augustine of Hippo', 'Cyril of Alexandria', 
+                           'Leo the Great', 'Gregory the Great', 'John of Damascus'],
+        }
+        
+        for period, names in periods.items():
+            print(f"\n{color('red', f'  {period} Fathers')}")
+            print(f"  {color('silver', '─' * 40)}")
+            for father in fathers:
+                if any(n.split()[0] in father['author'] for n in names):
+                    print(f"    {color('gold', '◆')} {color('silver', father['author']):<35} ({father['work_count']} works)")
+    
+    def list_works(self, author: Optional[str] = None):
+        """List works by author"""
+        if author:
+            self.cursor.execute(
+                """SELECT DISTINCT work FROM church_fathers 
+                   WHERE author LIKE ? ORDER BY work""",
+                (f"%{author}%",)
+            )
+        else:
+            self.cursor.execute("SELECT DISTINCT work FROM church_fathers ORDER BY work")
+        
+        works = self.cursor.fetchall()
+        
+        print(f"\n{color('gold', f'Works by {author or "All Fathers"}')}\n")
+        for i, work in enumerate(works, 1):
+            print(f"  {color('red', f'{i:3}')}. {color('silver', work['work'])}")
+    
+    def read_text(self, author: str, work: Optional[str] = None, section: Optional[str] = None):
+        """Read text from a Father"""
+        query = """SELECT author, work, section, text FROM church_fathers WHERE author LIKE ?"""
+        params = [f"%{author}%"]
+        
+        if work:
+            query += " AND work LIKE ?"
+            params.append(f"%{work}%")
+        
+        if section:
+            query += " AND section LIKE ?"
+            params.append(f"%{section}%")
+        
+        query += " ORDER BY id"
+        
+        self.cursor.execute(query, params)
+        results = self.cursor.fetchall()
+        
+        if not results:
+            print(color('silver', "No text found matching your query."))
+            return
+        
+        # Print header
+        result = results[0]
+        print(f"\n{color('gold', '╔' + '═' * 68 + '╗')}")
+        title = f"{result['author']}"
+        if work:
+            title += f" — {result['work']}"
+        print(f"{color('gold', '║')}  {color('bold', title).center(66)}  {color('gold', '║')}")
+        print(f"{color('gold', '╚' + '═' * 68 + '╝')}\n")
+        
+        for result in results:
+            if section:
+                print(f"  {color('red', result['section'])}")
+            text_lines = result['text'].split('\n')
+            for line in text_lines[:20]:  # Limit lines
+                print(f"  {color('silver', line)}")
+            if len(text_lines) > 20:
+                print(f"  {color('silver', '...')}")
+            print()
+    
+    def search(self, query: str, author: Optional[str] = None, limit: int = 20):
+        """Search the Fathers' writings"""
+        sql = """SELECT author, work, section, text FROM church_fathers WHERE text LIKE ?"""
+        params = [f"%{query}%"]
+        
+        if author:
+            sql += " AND author LIKE ?"
+            params.append(f"%{author}%")
+        
+        sql += " ORDER BY author, work LIMIT ?"
+        params.append(limit)
+        
+        self.cursor.execute(sql, params)
+        results = self.cursor.fetchall()
+        
+        if not results:
+            print(color('silver', f"No results found for '{query}'"))
+            return
+        
+        print(f"\n{color('gold', f'Found {len(results)} results for')} {color('red', query)}\n")
+        
+        for result in results:
+            author_work = f"{result['author']}, {result['work']}"
+            print(f"  {color('gold', author_work)}")
+            if result['section']:
+                print(f"    {color('silver', result['section'])}")
+            text = result['text'][:100] + "..." if len(result['text']) > 100 else result['text']
+            print(f"    {color('silver', text)}")
+            print()
+    
+    def random_quote(self):
+        """Display a random quote from the Fathers"""
+        import random
+        from datetime import datetime
+        
+        # Seed with day of year for daily rotation
+        day_of_year = datetime.now().timetuple().tm_yday
+        random.seed(day_of_year)
+        
+        self.cursor.execute("SELECT COUNT(*) FROM church_fathers")
+        total = self.cursor.fetchone()[0]
+        
+        if total == 0:
+            # Fallback quotes
+            quotes = [
+                ("Clement of Rome", "Let him who has love in Christ keep the commandments of Christ."),
+                ("Ignatius of Antioch", "Where there is Jesus Christ, there is the Catholic Church."),
+                ("Athanasius of Alexandria", "God became man so that man might become God."),
+                ("Augustine of Hippo", "Thou hast made us for Thyself, O Lord, and our hearts are restless until they rest in Thee."),
+                ("Basil of Caesarea", "The bread which you do not use is the bread of the hungry."),
+                ("John Chrysostom", "Prayer is the place of refuge for every worry."),
+                ("Gregory of Nazianzus", "The Son of God became man so that the sons of men might become gods."),
+            ]
+            quote = random.choice(quotes)
+            print(f"\n{color('gold', '╭' + '─' * 68 + '╮')}")
+            print(f"{color('gold', '│')}  {color('bold', 'Wisdom of the Fathers').center(66)}  {color('gold', '│')}")
+            print(f"{color('gold', '├' + '─' * 68 + '┤')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            text_lines = [quote[1][i:i+62] for i in range(0, len(quote[1]), 62)]
+            for line in text_lines:
+                print(f"{color('gold', '│')}   {color('silver', line):<63}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '│')}   {color('red', f'— {quote[0]}').rjust(63)}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '╰' + '─' * 68 + '╯')}\n")
+            return
+        
+        # Get random text
+        offset = random.randint(0, total - 1)
+        self.cursor.execute(
+            "SELECT author, work, section, text FROM church_fathers LIMIT 1 OFFSET ?",
+            (offset,)
+        )
+        
+        result = self.cursor.fetchone()
+        if result:
+            print(f"\n{color('gold', '╭' + '─' * 68 + '╮')}")
+            print(f"{color('gold', '│')}  {color('bold', 'Wisdom of the Fathers').center(66)}  {color('gold', '│')}")
+            print(f"{color('gold', '├' + '─' * 68 + '┤')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            text = result['text'][:200]
+            text_lines = [text[i:i+62] for i in range(0, len(text), 62)]
+            for line in text_lines:
+                print(f"{color('gold', '│')}   {color('silver', line):<63}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '│')}   {color('red', f'— {result['author']}, {result['work']}').rjust(63)}  {color('gold', '│')}")
+            print(f"{color('gold', '│')}                                                                    {color('gold', '│')}")
+            print(f"{color('gold', '╰' + '─' * 68 + '╯')}\n")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='patres - Church Fathers CLI for Sanctum OS',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f'''
+Examples:
+  {color('red', 'patres')} {color('silver', '--list')}           List all Church Fathers
+  {color('red', 'patres')} {color('silver', '--works Augustine')} List works by Augustine
+  {color('red', 'patres')} {color('silver', '--read Augustine')}   Read Augustine's writings
+  {color('red', 'patres')} {color('silver', '--search grace')}    Search for "grace"
+  {color('red', 'patres')} {color('silver', '--random')}          Show random quote
+        '''
+    )
+    
+    parser.add_argument('-l', '--list', action='store_true', help='List all Fathers')
+    parser.add_argument('-w', '--works', metavar='AUTHOR', help='List works by author')
+    parser.add_argument('-r', '--read', metavar='AUTHOR', help='Read writings of author')
+    parser.add_argument('--work', metavar='TITLE', help='Specific work to read')
+    parser.add_argument('-s', '--search', metavar='QUERY', help='Search for text')
+    parser.add_argument('-a', '--author', metavar='NAME', help='Filter by author')
+    parser.add_argument('--random', action='store_true', help='Show random quote')
+    parser.add_argument('--limit', type=int, default=20, help='Search result limit')
+    
+    args = parser.parse_args()
+    
+    reader = FathersReader()
+    reader.connect()
+    
+    try:
+        if args.list:
+            reader.list_fathers()
+        elif args.works:
+            reader.list_works(args.works)
+        elif args.read:
+            reader.read_text(args.read, args.work)
+        elif args.search:
+            reader.search(args.search, args.author, args.limit)
+        elif args.random:
+            reader.random_quote()
+        else:
+            reader.random_quote()
+    finally:
+        reader.close()
+
+if __name__ == '__main__':
+    main()

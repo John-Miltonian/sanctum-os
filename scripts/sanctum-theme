@@ -1,0 +1,64 @@
+#!/bin/bash
+# sanctum-theme - Apply Sanctum OS color scheme
+
+RED="\033[38;5;88m"
+GOLD="\033[38;5;178m"
+SILVER="\033[38;5;250m"
+BLACK="\033[38;5;232m"
+RESET="\033[0m"
+
+THEME_NAME="${1:-sanctum}"
+
+case $THEME_NAME in
+    sanctum|default)
+        # Sanctum OS Theme - Theological computing aesthetic
+        # Inspired by cassock black, cardinal red, and sacred gold
+        BG="#0a0a0a"          # Deep black like a cassock
+        FG="#d4c4a8"          # Aged parchment/papyrus
+        BLACK="#121212"       # Darker black
+        RED="#8b0000"         # Cardinal red
+        BRIGHT_RED="#b22222"  # Brighter cardinal
+        GREEN="#4a5d23"       # Ancient olive
+        YELLOW="#b8860b"      # Byzantine gold
+        BLUE="#1a3a5c"        # Deep ecclesiastical blue
+        MAGENTA="#4a1942"     # Royal purple
+        CYAN="#5f9ea0"        # Patristic teal
+        WHITE="#e8dcc4"       # Aged vellum
+        BRIGHT_BLACK="#2a2a2a"
+        BRIGHT_WHITE="#f5f5dc" # Cornsilk/beige
+        
+        # Apply to terminal
+        if [ -n "$TMUX" ]; then
+            tmux set-option -g status-style "bg=$BG,fg=$GOLD"
+            tmux set-option -g window-status-current-style "bg=$RED,fg=$WHITE,bold"
+        fi
+        
+        echo -e "${GOLD}Sanctum theme applied${RESET}"
+        echo -e "Colors: ${RED}Cardinal${RESET}, ${GOLD}Gold${RESET}, ${SILVER}Silver${RESET} on ${BLACK}Cassock Black${RESET}"
+        ;;
+    
+    liturgy)
+        # Liturgical seasons theme
+        BG="#0a0a0a"
+        FG="#ffffff"
+        RED="#dc143c"      # Pentecost red
+        GREEN="#228b22"    # Ordinary time green
+        PURPLE="#800080"   # Advent/Lent purple
+        GOLD="#ffd700"     # Easter gold
+        WHITE="#ffffff"    # Christmas white
+        ROSE="#ff69b4"     # Gaudete/Laetare rose
+        
+        echo -e "${GOLD}Liturgical theme applied${RESET}"
+        ;;
+    
+    *)
+        echo "Usage: sanctum-theme [sanctum|liturgy]"
+        exit 1
+        ;;
+esac
+
+# Export for applications
+export SANCTUM_BG="$BG"
+export SANCTUM_FG="$FG"
+export SANCTUM_RED="$RED"
+export SANCTUM_GOLD="$GOLD"

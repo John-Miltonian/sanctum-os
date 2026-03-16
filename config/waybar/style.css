@@ -1,0 +1,181 @@
+/* Sanctum OS Waybar Theme */
+/* Theological computing environment aesthetic */
+/* Colors: cassock black, cardinal red, Byzantine gold, aged parchment */
+
+* {
+    font-family: "JetBrains Mono Nerd Font", "Font Awesome 6 Free";
+    font-size: 13px;
+    font-weight: 500;
+}
+
+window#waybar {
+    background-color: #0a0a0a;
+    color: #d4c4a8;
+    border-bottom: 2px solid #8b0000;
+    opacity: 0.95;
+}
+
+/* Workspaces */
+#workspaces {
+    background-color: #121212;
+    border-radius: 4px;
+    padding: 0 8px;
+    margin: 4px 0;
+}
+
+#workspaces button {
+    background-color: transparent;
+    color: #888888;
+    padding: 0 12px;
+    margin: 4px 2px;
+    border-radius: 2px;
+    min-width: 24px;
+}
+
+#workspaces button:hover {
+    background-color: #2a2a2a;
+    color: #d4c4a8;
+}
+
+#workspaces button.active {
+    background-color: #8b0000;
+    color: #f5f5dc;
+    font-weight: bold;
+}
+
+#workspaces button.urgent {
+    background-color: #b22222;
+    color: #f5f5dc;
+}
+
+/* Window */
+#window {
+    background-color: #121212;
+    color: #d4c4a8;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+/* Custom theology module */
+#custom-theology {
+    background-color: #1a3a5c;
+    color: #d4c4a8;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    font-style: italic;
+}
+
+/* Custom biblia module */
+#custom-biblia {
+    background-color: #4a1942;
+    color: #daa520;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+#custom-biblia:hover {
+    background-color: #8b0000;
+}
+
+/* Clock */
+#clock {
+    background-color: #8b0000;
+    color: #f5f5dc;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Battery */
+#battery {
+    background-color: #121212;
+    color: #d4c4a8;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+#battery.charging {
+    background-color: #4a5d23;
+    color: #f5f5dc;
+}
+
+#battery.critical {
+    background-color: #b22222;
+    color: #f5f5dc;
+}
+
+#battery.warning {
+    background-color: #b8860b;
+    color: #0a0a0a;
+}
+
+/* Network */
+#network {
+    background-color: #121212;
+    color: #d4c4a8;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+#network.disconnected {
+    background-color: #b22222;
+    color: #f5f5dc;
+}
+
+/* Pulseaudio */
+#pulseaudio {
+    background-color: #121212;
+    color: #d4c4a8;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+#pulseaudio.muted {
+    background-color: #2a2a2a;
+    color: #888888;
+}
+
+/* Backlight */
+#backlight {
+    background-color: #121212;
+    color: #d4c4a8;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+/* Tray */
+#tray {
+    background-color: #121212;
+    padding: 0 8px;
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: #b22222;
+}
+
+/* Tooltip */
+tooltip {
+    background-color: #0a0a0a;
+    border: 1px solid #8b0000;
+    border-radius: 4px;
+}
+
+tooltip label {
+    color: #d4c4a8;
+    padding: 4px 8px;
+}

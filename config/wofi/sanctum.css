@@ -1,0 +1,89 @@
+/* Sanctum OS Wofi Theme */
+/* Theological application launcher */
+/* Colors: cassock black, cardinal red, Byzantine gold, aged parchment */
+
+window {
+    margin: 0px;
+    border: 2px solid #8b0000;
+    border-radius: 8px;
+    background-color: #0a0a0a;
+    font-family: "JetBrains Mono Nerd Font";
+    font-size: 14px;
+}
+
+#input {
+    margin: 8px;
+    padding: 12px 16px;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    background-color: #121212;
+    color: #d4c4a8;
+}
+
+#input:focus {
+    border-color: #8b0000;
+    background-color: #1a1a1a;
+}
+
+#input placeholder {
+    color: #666666;
+}
+
+#inner-box {
+    margin: 8px;
+    background-color: transparent;
+}
+
+#outer-box {
+    margin: 0px;
+    padding: 0px;
+    background-color: #0a0a0a;
+}
+
+#scroll {
+    margin: 0px;
+    background-color: transparent;
+}
+
+#text {
+    margin: 0px;
+    padding: 4px 0;
+    color: #d4c4a8;
+}
+
+#entry {
+    margin: 2px 4px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background-color: #121212;
+}
+
+#entry:selected {
+    background-color: #8b0000;
+}
+
+#entry:selected #text {
+    color: #f5f5dc;
+    font-weight: bold;
+}
+
+#entry:hover {
+    background-color: #2a2a2a;
+}
+
+#img {
+    margin-right: 12px;
+}
+
+/* Category headers */
+#text .category {
+    color: #b8860b;
+    font-weight: bold;
+}
+
+/* Highlighted search match */
+#text highlight {
+    color: #daa520;
+    font-weight: bold;
+    text-decoration: underline;
+}

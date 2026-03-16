@@ -1,0 +1,72 @@
+#!/bin/bash
+# sanctum-quote - Display a random theological quote
+
+QUOTES=(
+    "In the beginning was the Word, and the Word was with God, and the Word was God. — John 1:1"
+    "For God so loved the world that he gave his only Son. — John 3:16"
+    "The Lord is my shepherd; I shall not want. — Psalm 23:1"
+    "Trust in the Lord with all your heart. — Proverbs 3:5"
+    "I can do all things through Christ who strengthens me. — Philippians 4:13"
+    "God became man so that man might become God. — Athanasius"
+    "Thou hast made us for Thyself, O Lord. — Augustine"
+    "Where there is Jesus Christ, there is the Catholic Church. — Ignatius of Antioch"
+    "The bread which you do not use is the bread of the hungry. — Basil of Caesarea"
+    "Prayer is the place of refuge for every worry. — John Chrysostom"
+    "The glory of God is a human being fully alive. — Irenaeus"
+    "He who has love in Christ keeps the commandments of Christ. — Clement of Rome"
+    "The Holy Spirit makes the soul a place of rest. — Gregory of Nyssa"
+    "Christ is the Head of the body, the Church. — Colossians 1:18"
+    "Faith is the substance of things hoped for. — Hebrews 11:1"
+    "Love is patient, love is kind. — 1 Corinthians 13:4"
+    "The fear of the Lord is the beginning of wisdom. — Proverbs 9:10"
+    "Blessed are the pure in heart, for they shall see God. — Matthew 5:8"
+    "Ask, and it will be given to you; seek, and you will find. — Matthew 7:7"
+    "I am the way, the truth, and the life. — John 14:6"
+)
+
+# Get day of year for daily rotation
+DAY_OF_YEAR=$(date +%j)
+INDEX=$(( (DAY_OF_YEAR - 1) % ${#QUOTES[@]} ))
+
+# Colors
+RED="\033[38;5;88m"
+GOLD="\033[38;5;178m"
+SILVER="\033[38;5;250m"
+RESET="\033[0m"
+
+QUOTE="${QUOTES[$INDEX]}"
+
+# Format output
+echo ""
+echo -e "${GOLD}┌──────────────────────────────────────────────────────────────────┐${RESET}"
+echo -e "${GOLD}│${RESET}  ${RED}╭────────────────────────────────────────────────────────────╮${RESET}  ${GOLD}│${RESET}"
+echo -e "${GOLD}│${RESET}  ${RED}│${RESET}                                                            ${RED}│${RESET}  ${GOLD}│${RESET}"
+
+# Split quote into lines (max 56 chars)
+TEXT="${QUOTE%% — *}"
+AUTHOR="${QUOTE##* — }"
+
+# Word wrap
+LINE=""
+for word in $TEXT; do
+    if (( ${#LINE} + ${#word} + 1 > 56 )); then
+        printf "${GOLD}│${RESET}  ${RED}│${RESET}  ${SILVER}%-56s${RESET}  ${RED}│${RESET}  ${GOLD}│\n" "$LINE"
+        LINE="$word"
+    else
+        if [ -z "$LINE" ]; then
+            LINE="$word"
+        else
+            LINE="$LINE $word"
+        fi
+    fi
+done
+if [ -n "$LINE" ]; then
+    printf "${GOLD}│${RESET}  ${RED}│${RESET}  ${SILVER}%-56s${RESET}  ${RED}│${RESET}  ${GOLD}│\n" "$LINE"
+fi
+
+echo -e "${GOLD}│${RESET}  ${RED}│${RESET}                                                            ${RED}│${RESET}  ${GOLD}│${RESET}"
+printf "${GOLD}│${RESET}  ${RED}│${RESET}  ${RED}%-56s${RESET}  ${RED}│${RESET}  ${GOLD}│\n" "— $AUTHOR"
+echo -e "${GOLD}│${RESET}  ${RED}│${RESET}                                                            ${RED}│${RESET}  ${GOLD}│${RESET}"
+echo -e "${GOLD}│${RESET}  ${RED}╰────────────────────────────────────────────────────────────╯${RESET}  ${GOLD}│${RESET}"
+echo -e "${GOLD}└──────────────────────────────────────────────────────────────────┘${RESET}"
+echo ""
