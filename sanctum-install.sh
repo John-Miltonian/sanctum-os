@@ -1,7 +1,7 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════════════
 # SANCTUM OS - ONE-SHOT INSTALLER
-# curl -fsSL https://raw.githubusercontent.com/user/sanctum-os/main/sanctum-install.sh | bash
+# curl -fsSL https://raw.githubusercontent.com/John-Miltonian/sanctum-os/main/sanctum-install.sh | bash
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -e
@@ -13,7 +13,7 @@ SILVER='\033[38;5;250m'
 RESET='\033[0m'
 
 # Configuration
-REPO_URL="${SANCTUM_REPO:-https://github.com/joshr/sanctum-os/archive/refs/heads/main.tar.gz}"
+REPO_URL="${SANCTUM_REPO:-https://github.com/John-Miltonian/sanctum-os/archive/refs/heads/main.tar.gz}"
 TEMP_DIR=$(mktemp -d)
 SANCTUM_DIR="$HOME/.sanctum-install"
 
