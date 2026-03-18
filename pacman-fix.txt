@@ -1,0 +1,41 @@
+# COMPLETE PACMAN.CONFIG FIX FOR ENDEAVOUROS
+# Run these commands one by one:
+
+# Step 1: Backup current config
+sudo cp /etc/pacman.conf /etc/pacman.conf.backup.$(date +%Y%m%d)
+
+# Step 2: Create fresh mirrorlist with working servers
+sudo tee /etc/pacman.d/mirrorlist << 'MIRROREOF'
+## Worldwide
+Server = https://geo.mirror.pkg.archlinux.org/$repo/os/$arch
+
+## United States
+Server = https://mirrors.lug.mtu.edu/archlinux/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+Server = https://mirrors.rit.edu/archlinux/$repo/os/$arch
+
+## Europe
+Server = https://mirror.pkgbuild.com/$repo/os/$arch
+Server = https://archlinux.mailtunnel.eu/$repo/os/$arch
+MIRROREOF
+
+# Step 3: Check what repositories are currently configured
+echo "=== Current repository configuration ==="
+grep -E "^\[|^#\[" /etc/pacman.conf | head -20
+
+# Step 4: Enable core, extra, and community repositories
+# Uncomment all repository sections
+sudo sed -i 's/^#\[core\]/[core]/' /etc/pacman.conf
+sudo sed -i '/^\[core\]/{n;s/^#Include/Include/}' /etc/pacman.conf
+
+sudo sed -i 's/^#\[extra\]/[extra]/' /etc/pacman.conf
+sudo sed -i '/^\[extra\]/{n;s/^#Include/Include/}' /etc/pacman.conf
+
+sudo sed -i 's/^#\[community\]/[community]/' /etc/pacman.conf
+sudo sed -i '/^\[community\]/{n;s/^#Include/Include/}' /etc/pacman.conf
+
+# Step 5: Force sync database
+sudo pacman -Syy
+
+# Step 6: Try installing Hyprland again
+sudo pacman -S hyprland waybar wofi kitty --noconfirm
